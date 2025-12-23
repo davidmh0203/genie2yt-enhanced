@@ -185,51 +185,122 @@ export class PlaylistConverter {
     const results: MatchResult[] = [];
     const candidatesMap = new Map<string, any[]>();
 
-    // 각 곡에 대해 YouTube 검색
+    // 각 곡에 대해 YouTube 검색 (여러 검색 쿼리 변형 시도)
     for (const song of songs) {
-      const searchQuery = `${song.title} ${song.artist}`;
+      // 검색 쿼리 변형 생성
+      const searchQueries = this.generateSearchQueries(song);
+      let videos: any[] = [];
 
-      // 캐시 확인
-      const cachedVideoId = await this.cacheRepository.getSearchCache(searchQuery);
-      if (cachedVideoId) {
-        candidatesMap.set(searchQuery, [
-          {
-            videoId: cachedVideoId,
-            title: song.title, // 캐시된 경우 정확한 제목은 모름
-          },
-        ]);
-        continue;
-      }
-
-      try {
-        const videos = await this.youtubeAdapter.search(searchQuery, 5);
-        candidatesMap.set(searchQuery, videos);
-
-        // 첫 번째 결과를 캐시에 저장
-        if (videos.length > 0) {
-          await this.cacheRepository.setSearchCache(searchQuery, videos[0].videoId);
+      // 각 검색 쿼리 변형 시도
+      for (const searchQuery of searchQueries) {
+        // 캐시 확인
+        const cached = await this.cacheRepository.getSearchCache(searchQuery);
+        if (cached) {
+          videos.push({
+            videoId: cached.videoId,
+            title: cached.title, // 캐시된 실제 YouTube 제목 사용
+          });
+          continue;
         }
 
-        // Rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 300));
-      } catch (error) {
-        Logger.warn('Failed to search YouTube', {
-          query: searchQuery,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        candidatesMap.set(searchQuery, []);
+        try {
+          const searchResults = await this.youtubeAdapter.search(searchQuery, 5);
+          videos.push(...searchResults);
+
+          // 첫 번째 결과를 캐시에 저장 (videoId와 title 함께)
+          if (searchResults.length > 0) {
+            await this.cacheRepository.setSearchCache(
+              searchQuery,
+              searchResults[0].videoId,
+              searchResults[0].title
+            );
+          }
+
+          // Rate limiting
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        } catch (error) {
+          Logger.warn('Failed to search YouTube', {
+            query: searchQuery,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+
+        // 결과가 충분하면 중단
+        if (videos.length >= 5) {
+          break;
+        }
       }
+
+      // 중복 제거 (videoId 기준)
+      const uniqueVideos = Array.from(
+        new Map(videos.map((v) => [v.videoId, v])).values()
+      );
+
+      const searchKey = `${song.title} ${song.artist}`;
+      candidatesMap.set(searchKey, uniqueVideos);
+
+      Logger.info('YouTube search completed', {
+        song: `${song.title} - ${song.artist}`,
+        query: searchQueries[0],
+        resultsCount: uniqueVideos.length,
+      });
     }
 
     // 매칭 엔진으로 최적 매칭 찾기
     for (const song of songs) {
-      const searchQuery = `${song.title} ${song.artist}`;
-      const candidates = candidatesMap.get(searchQuery) || [];
+      const searchKey = `${song.title} ${song.artist}`;
+      const candidates = candidatesMap.get(searchKey) || [];
       const result = this.matchingEngine.match(song, candidates);
+      
+      Logger.info('Matching result', {
+        song: `${song.title} - ${song.artist}`,
+        candidatesCount: candidates.length,
+        confidence: result.confidence,
+        strategy: result.matchStrategy,
+        matched: !!result.matchedVideo,
+      });
+
       results.push(result);
     }
 
     return results;
+  }
+
+  /**
+   * 검색 쿼리 변형 생성
+   */
+  private generateSearchQueries(song: ParsedSong): string[] {
+    const queries: string[] = [];
+
+    // 1. 기본: "제목 아티스트"
+    queries.push(`${song.title} ${song.artist}`);
+
+    // 2. 아티스트 먼저: "아티스트 제목"
+    queries.push(`${song.artist} ${song.title}`);
+
+    // 3. 한글 괄호 제거 (예: "우디 (Woody)" → "우디 Woody")
+    const artistWithoutBrackets = song.artist.replace(/\([^)]*\)/g, '').trim();
+    if (artistWithoutBrackets !== song.artist) {
+      queries.push(`${song.title} ${artistWithoutBrackets}`);
+      queries.push(`${artistWithoutBrackets} ${song.title}`);
+    }
+
+    // 4. 괄호 안의 영문 추출 (예: "우디 (Woody)" → "Woody")
+    const bracketMatch = song.artist.match(/\(([^)]+)\)/);
+    if (bracketMatch) {
+      const englishName = bracketMatch[1];
+      queries.push(`${song.title} ${englishName}`);
+      queries.push(`${englishName} ${song.title}`);
+    }
+
+    // 5. 제목만 (Inst. 제거)
+    const titleWithoutInst = song.title.replace(/\s*\(Inst\.?\)/gi, '').trim();
+    if (titleWithoutInst !== song.title) {
+      queries.push(`${titleWithoutInst} ${song.artist}`);
+    }
+
+    // 중복 제거
+    return Array.from(new Set(queries));
   }
 
   /**

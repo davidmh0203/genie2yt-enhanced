@@ -71,4 +71,3 @@ export interface Env {
   CACHE: KVNamespace;
   YOUTUBE_API_KEY?: string;
 }
-

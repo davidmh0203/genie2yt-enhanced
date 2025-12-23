@@ -22,15 +22,27 @@ export class CacheRepository {
     await this.kv.delete(this.getCacheKey(url));
   }
 
-  async getSearchCache(query: string): Promise<string | null> {
-    const cached = await this.kv.get(`search:${query}`, 'text');
-    return cached;
+  async getSearchCache(query: string): Promise<{ videoId: string; title: string } | null> {
+    const cached = await this.kv.get(`search:${query}`, 'json');
+    if (cached) {
+      return cached as { videoId: string; title: string };
+    }
+    return null;
   }
 
-  async setSearchCache(query: string, videoId: string, ttl: number = 86400): Promise<void> {
-    await this.kv.put(`search:${query}`, videoId, {
-      expirationTtl: ttl, // 기본 24시간
-    });
+  async setSearchCache(
+    query: string,
+    videoId: string,
+    title: string,
+    ttl: number = 86400
+  ): Promise<void> {
+    await this.kv.put(
+      `search:${query}`,
+      JSON.stringify({ videoId, title }),
+      {
+        expirationTtl: ttl, // 기본 24시간
+      }
+    );
   }
 }
 
