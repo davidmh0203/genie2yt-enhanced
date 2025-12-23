@@ -1,0 +1,25 @@
+name = "genie2yt-worker"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 데이터베이스
+# 실제 배포 시 database_id를 설정해야 합니다
+# npx wrangler d1 create genie2yt-db 명령으로 생성 후 ID를 여기에 입력
+[[d1_databases]]
+binding = "DB"
+database_name = "genie2yt-db"
+database_id = "194f9c80-7fcb-411c-9480-5fb5e64010fe"
+
+# KV 네임스페이스 (캐싱용)
+[[kv_namespaces]]
+binding = "CACHE"
+id = "0fdcfe7d1cf74107830ae9e4d9418f06"
+
+# 환경 변수 (로컬 개발용)
+# 실제 배포 시 wrangler secret put 명령으로 설정
+# 또는 .dev.vars 파일에 설정 (로컬 개발용)
+[vars]
+# YOUTUBE_API_KEY는 .dev.vars 파일에 설정하거나 wrangler secret으로 설정
+# GOOGLE_CLIENT_ID는 Frontend에서만 사용하므로 Worker에서는 필요 없음
+

@@ -1,0 +1,7 @@
+name = "late-salad-cc7d"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+[env.production]
+vars = { VITE_GOOGLE_CLIENT_ID = "750983910255-2nmrqt977h2mejhrrcene1ijovva1t5s.apps.googleusercontent.com", VITE_CLOUDFLARE_WORKER_BASE_URL = "https://genie2yt-worker.davidmh0203.workers.dev" }
+
