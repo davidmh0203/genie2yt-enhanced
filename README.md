@@ -89,14 +89,14 @@
 - **HCI Layer**: React 기반 사용자 인터페이스
 - **PD Layer**: 비즈니스 로직 (파서, 변환기, 매칭 엔진)
 - **DM Layer**: 데이터 접근 (Repository 패턴)
+<img width="1081" height="650" alt="image (7)" src="https://github.com/user-attachments/assets/24762b31-f559-48d4-99d7-3bb02f3a78b5" />
 
-![아키텍쳐](attachment:4b2c1deb-8233-43dc-b376-2a472fc18ab9:image.png)
 
 아키텍쳐
 
  **3계층 원리**를 적용하여,  서버 클라이언트 구조로 설계하였습니다. 브라우저에서는 사용자로부터 URL 입력을 받고, 서버로부터 전환이 완료된 유튜브 재생목록 링크를 받아서 사용자에게 보여주게 됩니다. 또한 성공/실패 로그와 실패 요인들을 함께보여주게 됩니다. 또한, Google OAuth를 통해 구글 로그인 기능을 사용하고, 사용자의 구글 계정 정보를 통해 YouTube 계정에 접근하게 됩니다. 서버에서는 CORS를 이용해 프론트에서의 크롤링 방지를 우회하여 지니뮤직 플레이리스트를 파싱하고, 유튜브 API를 이용해 그 플레이리스트 속 각 곡들을 검색하게 됩니다. 이렇게 사용자정보, 사용자의 플레이리스트 변환 기록등을 SQL DB에 저장하고, 이미  video ID를 찾은 곡들은 추후 다시 YouTube API의 토큰을 사용해서 다시 검색하지 않도록하여 토큰을 절약할 수 있도록 Key Value 형식의 DB에 저장해둡니다.
 
-![시퀀스 다이어그램](attachment:ee484c37-dfe9-41fb-9156-f429de3e5c77:image.png)
+<img width="680" height="690" alt="image (8)" src="https://github.com/user-attachments/assets/59a8ad9d-8838-46f7-a81b-5a6b493477c6" />
 
 시퀀스 다이어그램
 
@@ -188,7 +188,7 @@ if (bestScore >= 0.4 && bestMatch) return result;
 
 ## **3.3 데이터베이스 설계**
 
-![Playlist Conversion Flow-2025-12-23-151157.png](attachment:ff574dcc-c411-4f76-b91e-2dce5ba356cb:Playlist_Conversion_Flow-2025-12-23-151157.png)
+<img width="5908" height="7450" alt="Playlist Conversion Flow-2025-12-23-151157 (1)" src="https://github.com/user-attachments/assets/a687c155-1dc4-4186-a4e7-c63c4b885a82" />
 
 ### 3.3.1 스키마
 
